@@ -3,261 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scholaris AI - University Study Assistant</title>
+    <title>Scholaris AI - University Study Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax5/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
-
-    <!-- Header -->
-    <header class="bg-indigo-700 text-white shadow-md">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 p-2 rounded-lg text-2xl">🎓</div>
-                <div>
-                    <h1 class="text-lg font-bold">Scholaris AI</h1>
-                    <p class="text-xs text-indigo-200">University Study Assistant</p>
-                </div>
-            </div>
-            <button id="openSettings" class="p-2 hover:bg-indigo-600 rounded-full transition" title="Settings">
-                ⚙️
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col space-y-6">
-        
-        <!-- Input Section -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <div class="flex justify-between items-center mb-3">
-                <label class="font-semibold text-slate-700 flex items-center gap-2">
-                    📄 Lecture Material & Files
-                </label>
-                <div class="space-x-2">
-                    <button id="loadSample" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-md font-medium hover:bg-indigo-100 transition">
-                        Load Sample Notes
-                    </button>
-                    <button id="clearText" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md font-medium hover:bg-slate-200 transition">
-                        Clear
-                    </button>
-                </div>
-            </div>
-
-            <!-- File Upload Box -->
-            <div class="mb-3 border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-indigo-500 transition cursor-pointer relative bg-slate-50/50">
-                <input type="file" id="fileUpload" accept=".pdf,.txt,.png,.jpg,.jpeg" class="absolute inset-0 opacity-0 cursor-pointer">
-                <div class="flex flex-col items-center justify-center space-y-1">
-                    <span class="text-2xl">📂</span>
-                    <p class="text-sm font-medium text-slate-600">Click to upload PDF, Text, or Images</p>
-                    <p id="fileNameDisplay" class="text-xs text-indigo-600 font-semibold"></p>
-                </div>
-            </div>
-
-            <textarea id="notesInput" rows="5" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm" placeholder="Or paste your lecture notes, textbook chapters, or reading assignments here..."></textarea>
-            
-            <button id="generateBtn" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow transition flex items-center justify-center gap-2">
-                ✨ Generate Study Guide
-            </button>
-        </div>
-
-        <!-- Output Section -->
-        <div id="outputContainer" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">Generated Study Guide</h2>
-            <div id="aiOutput" class="prose max-w-none text-sm text-slate-700 space-y-4"></div>
-        </div>
-    </main>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
-            <button id="closeSettings" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl">&times;</button>
-            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                ⚙️ API Setup
-            </h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Gemini API Key</label>
-                    <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full p-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-xs text-slate-500 mt-1">Get your free key from Google AI Studio.</p>
-                </div>
-                <button id="saveApiKey" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition text-sm">
-                    Save Credentials
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Script Logic -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-        const sampleText = `Topic: Principles of Photosynthesis
-1. Light-Dependent Reactions:
-- Occur in the thylakoid membranes of chloroplasts.
-- Require light energy absorbed by chlorophyll pigments.
-- Split water molecules to release oxygen, ATP, and NADPH.
+    <!-- AUTHENTICATION SCREEN -->
+    <div id="authScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 space-y-6">
+            <div class="text-center">
+                <div class="inline-block bg-indigo-100 text-indigo-600 p-3 rounded-2xl text-3xl mb-2">🎓</div>
+                <h1 class="text-2xl font-bold text-slate-900">Scholaris AI</h1>
+                <p class="text-slate-500 text-sm mt-1">Sign in with your student account to continue</p>
+            </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Full Name</label>
+                    <input type="text" id="userNameInput" required placeholder="Olaleye Sheriffdeen" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Email Address</label>
+                    <input type="email" id="userEmailInput" required placeholder="student@university.edu" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Password</label>
+                    <input type="password" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition text-sm">
+                    Sign In to Dashboard
+                </button>
+            </form>
+        </div>
+    </div>
 
-2. Light-Independent Reactions (Calvin Cycle):
-- Occur in the stroma of the chloroplast.
-- Does not directly require light, but uses ATP and NADPH from light reactions.
-- Fixes carbon dioxide (CO2) into 3-carbon sugars using the enzyme RuBisCO (Ribulose-1,5-bisphosphate carboxylase-oxygenase).
+     <!-- MAIN APP HEADER -->
+    <header class="bg-indigo-700 text-white shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-lg text-xl">🎓</div>
+                <div>
+                    <h1 class="text-base font-bold">Scholaris AI</h1>
+                    <p id="userGreeting" class="text-xs text-indigo-200">Welcome back</p>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="text-xs bg-indigo-800 hover:bg-indigo-900 text-white font-semibold px-3 py-1.5 rounded-lg transition">Logout</button>
+        </div>
+    </header>
+       <!-- MAIN DASHBOARD -->
+    <main class="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col space-y-6 my-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="font-bold text-slate-700 flex items-center gap-2">📄 Lecture Material & Files</h2>
+                <div class="space-x-2">
+                    <button onclick="loadSampleNotes()" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-100 transition">Load Sample</button>
+                    <button onclick="clearAll()" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-medium hover:bg-slate-200 transition">Clear</button>
+                </div>
+            </div>
 
-Key Significance:
-Photosynthesis provides the primary energy source for nearly all living ecosystems and maintains atmospheric oxygen levels necessary for cellular respiration.`;
+            <textarea id="notesInput" rows="4" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm" placeholder="Paste your lecture notes or syllabus topics here..."></textarea>
+            
+            <button onclick="generateStudyMaterial()" id="generateBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm">
+                ✨ Generate Study Guide & Tools
+            </button>
+        </div>
 
-        const modal = document.getElementById('settingsModal');
-        const openSettingsBtn = document.getElementById('openSettings');
-        const closeSettingsBtn = document.getElementById('closeSettings');
-        const saveApiKeyBtn = document.getElementById('saveApiKey');
-        const apiKeyInput = document.getElementById('apiKeyInput');
-        const loadSampleBtn = document.getElementById('loadSample');
-        const clearTextBtn = document.getElementById('clearText');
-        const notesInput = document.getElementById('notesInput');
-        const generateBtn = document.getElementById('generateBtn');
-        const outputContainer = document.getElementById('outputContainer');
-        const aiOutput = document.getElementById('aiOutput');
-        const fileUpload = document.getElementById('fileUpload');
-        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        <div id="outputContainer" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <div id="contentSummary" class="prose max-w-none text-sm text-slate-700 space-y-3"></div>
+        </div>
+    </main>
 
-        let uploadedFilePayload = null; // For images/PDFs if sent directly
+    <script>
+        const MODEL_NAME = "gemini-2.0-flash";
+        const API_KEY = "AQ.Ab8RN6le1dhXXf2DEmO56R6zMHtmlul8Z"; 
 
-        const savedKey = localStorage.getItem('gemini_api_key');
-        if (savedKey) {
-            apiKeyInput.value = savedKey;
-        } else {
-            modal.classList.remove('hidden');
+        window.onload = function() {
+            const user = localStorage.getItem('scholaris_user');
+            if (user) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('userGreeting').innerText = `Welcome, ${user}`;
+            }
+        };
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const name = document.getElementById('userNameInput').value.trim();
+            localStorage.setItem('scholaris_user', name);
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('userGreeting').innerText = `Welcome, ${name}`;
         }
 
-        openSettingsBtn.addEventListener('click', () => modal.classList.remove('hidden'));
-        closeSettingsBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        function handleLogout() {
+            localStorage.removeItem('scholaris_user');
+            document.getElementById('authScreen').classList.remove('hidden');
+        }
 
-        saveApiKeyBtn.addEventListener('click', () => {
-            const key = apiKeyInput.value.trim();
-            if (key) {
-                localStorage.setItem('gemini_api_key', key);
-                modal.classList.add('hidden');
-                alert('API Key saved successfully!');
-            } else {
-                alert('Please enter a valid API key.');
-            }
-        });
+        function loadSampleNotes() {
+            document.getElementById('notesInput').value = `Topic: Cell Biology & Photosynthesis\nPhotosynthesis converts light energy into chemical energy in chloroplasts.`;
+        }
 
-        loadSampleBtn.addEventListener('click', () => {
-            notesInput.value = sampleText;
-            uploadedFilePayload = null;
-            fileNameDisplay.textContent = '';
-        });
+        function clearAll() {
+            document.getElementById('notesInput').value = '';
+            document.getElementById('outputContainer').classList.add('hidden');
+        }
 
-        clearTextBtn.addEventListener('click', () => {
-            notesInput.value = '';
-            fileUpload.value = '';
-            uploadedFilePayload = null;
-            fileNameDisplay.textContent = '';
-        });
-
-        // Handle File Uploads
-        fileUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            fileNameDisplay.textContent = `Loaded: ${file.name}`;
-            
-            if (file.type === 'text/plain') {
-                const reader = new FileReader();
-                reader.onload = (event) => { notesInput.value = event.target.result; };
-                reader.readAsText(file);
-                uploadedFilePayload = null;
-            } else if (file.type === 'application/pdf') {
-                notesInput.value = 'Extracting text from PDF...';
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                    let fullText = '';
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
-                    }
-                    notesInput.value = fullText;
-                    uploadedFilePayload = null;
-                } catch (err) {
-                    notesInput.value = '';
-                    alert('Error parsing PDF: ' + err.message);
-                }
-            } else if (file.type.startsWith('image/')) {
-                // Image OCR via Gemini Vision
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const base64Data = event.target.result.split(',')[1];
-                    uploadedFilePayload = {
-                        inlineData: {
-                            data: base64Data,
-                            mimeType: file.type
-                        }
-                    };
-                    notesInput.value = `[Attached Image: ${file.name} - Ready for AI OCR Analysis]`;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        generateBtn.addEventListener('click', async () => {
-            const apiKey = localStorage.getItem('gemini_api_key');
-            if (!apiKey) {
-                modal.classList.remove('hidden');
-                alert('Please enter your Gemini API key first.');
+        async function generateStudyMaterial() {
+            const text = document.getElementById('notesInput').value.trim();
+            if (!text) {
+                alert('Please provide lecture notes first.');
                 return;
             }
 
-            const text = notesInput.value.trim();
-            if (!text && !uploadedFilePayload) {
-                alert('Please enter notes, load sample notes, or upload a file first.');
-                return;
-            }
-
+            const generateBtn = document.getElementById('generateBtn');
             generateBtn.disabled = true;
-            generateBtn.textContent = 'Generating Study Guide...';
-            outputContainer.classList.remove('hidden');
-            aiOutput.innerHTML = '<p class="text-slate-500 italic">Analyzing material and structuring study guide...</p>';
-
-            const promptText = `You are Scholaris AI, an expert university-level academic assistant. Analyze the provided material and generate a structured study guide containing: 1. Executive Summary, 2. Key Concepts & Simplified Notes, 3. Technical Glossary, and 4. Practice Exam Quiz with answers.\n\nMaterial:\n${text}`;
-
-            let contentParts = [{ text: promptText }];
-            if (uploadedFilePayload) {
-                contentParts.push(uploadedFilePayload);
-            }
+            generateBtn.textContent = 'Analyzing with Gemini 2.0 Flash...';
+            document.getElementById('outputContainer').classList.remove('hidden');
+            document.getElementById('contentSummary').innerHTML = '<p class="text-slate-500 italic">Generating study guide...</p>';
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: contentParts }]
+                        contents: [{ parts: [{ text: `Create a clean study guide from these notes:\n${text}` }] }]
                     })
                 });
 
                 const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error.message);
-                }
+                if (data.error) throw new Error(data.error.message);
 
-                const rawContent = data.candidates[0].content.parts[0].text;
-                aiOutput.innerHTML = marked.parse(rawContent);
+                const outputText = data.candidates[0].content.parts[0].text;
+                document.getElementById('contentSummary').innerHTML = marked.parse(outputText);
             } catch (err) {
-                aiOutput.innerHTML = `<p class="text-red-600 font-semibold">Error: ${err.message}</p>`;
+                document.getElementById('contentSummary').innerHTML = `<p class="text-red-600 font-semibold">Error: ${err.message}</p>`;
             } finally {
                 generateBtn.disabled = false;
-                generateBtn.textContent = '✨ Generate Study Guide';
+                generateBtn.textContent = '✨ Generate Study Guide & Tools';
             }
-        });
+        }
     </script>
 </body>
 </html>
