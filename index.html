@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scholaris AI - University Study Platform</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for Markdown Output -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- PDF.js for Reading Document Uploads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -15,7 +18,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- AUTHENTICATION SCREEN -->
+    <!-- AUTHENTICATION OVERLAY -->
     <div id="authScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 space-y-6">
             <div class="text-center">
@@ -26,7 +29,7 @@
             <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Full Name</label>
-                    <input type="text" id="userNameInput" required placeholder="Olaleye Sheriffdeen" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" id="userNameInput" required placeholder="Student Name" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Email Address</label>
@@ -43,7 +46,7 @@
         </div>
     </div>
 
-     <!-- MAIN APP HEADER -->
+    <!-- HEADER NAVIGATION -->
     <header class="bg-indigo-700 text-white shadow-md">
         <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -56,14 +59,26 @@
             <button onclick="handleLogout()" class="text-xs bg-indigo-800 hover:bg-indigo-900 text-white font-semibold px-3 py-1.5 rounded-lg transition">Logout</button>
         </div>
     </header>
-       <!-- MAIN DASHBOARD -->
+
+    <!-- MAIN STUDY DASHBOARD INPUTS -->
     <main class="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col space-y-6 my-4">
+        
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="font-bold text-slate-700 flex items-center gap-2">📄 Lecture Material & Files</h2>
                 <div class="space-x-2">
                     <button onclick="loadSampleNotes()" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-100 transition">Load Sample</button>
                     <button onclick="clearAll()" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-medium hover:bg-slate-200 transition">Clear</button>
+                </div>
+            </div>
+
+            <!-- File Drop Box -->
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-indigo-500 transition cursor-pointer relative bg-slate-50/50">
+                <input type="file" id="fileUpload" accept=".pdf,.txt,.png,.jpg,.jpeg" class="absolute inset-0 opacity-0 cursor-pointer">
+                <div class="flex flex-col items-center justify-center space-y-1">
+                    <span class="text-xl">📂</span>
+                    <p class="text-xs font-medium text-slate-600">Click to upload PDF, Text, or Images</p>
+                    <p id="fileNameDisplay" class="text-xs text-indigo-600 font-semibold"></p>
                 </div>
             </div>
 
@@ -74,14 +89,47 @@
             </button>
         </div>
 
+        <!-- TABBED DASHBOARD OUTPUT -->
         <div id="outputContainer" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-            <div id="contentSummary" class="prose max-w-none text-sm text-slate-700 space-y-3"></div>
+            <div class="flex border-b border-slate-200 space-x-4 overflow-x-auto">
+                <button onclick="switchTab('summary')" id="tabSummary" class="pb-3 font-semibold text-sm border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap">📝 Summary & Notes</button>
+                <button onclick="switchTab('flashcards')" id="tabFlashcards" class="pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">🗂️ Flashcards</button>
+                <button onclick="switchTab('quiz')" id="tabQuiz" class="pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">❓ Practice Quiz</button>
+            </div>
+
+            <!-- Tab 1: Executive Summary -->
+            <div id="contentSummary" class="tab-content prose max-w-none text-sm text-slate-700 space-y-3"></div>
+
+            <!-- Tab 2: Interactive Flashcards -->
+            <div id="contentFlashcards" class="tab-content hidden space-y-4 text-center">
+                <div id="flashcardBox" class="bg-indigo-50 border border-indigo-100 rounded-2xl p-8 min-h-[160px] flex items-center justify-center cursor-pointer shadow-sm transition">
+                    <p id="flashcardText" class="text-base font-semibold text-indigo-900">Click generate to load flashcards.</p>
+                </div>
+                <div class="flex justify-between items-center px-2">
+                    <button onclick="prevCard()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Previous</button>
+                    <span id="cardCounter" class="text-xs text-slate-500 font-medium">Card 0 of 0</span>
+                    <button onclick="nextCard()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Next</button>
+                </div>
+            </div>
+
+            <!-- Tab 3: Multiple Choice Quiz -->
+            <div id="contentQuiz" class="tab-content hidden space-y-4">
+                <div id="quizContainer" class="space-y-4"></div>
+            </div>
         </div>
     </main>
 
+    <!-- JAVASCRIPT APP LOGIC -->
     <script>
         const MODEL_NAME = "gemini-2.0-flash";
-        const API_KEY = "AQ.Ab8RN6le1dhXXf2DEmO56R6zMHtmlul8Z"; 
+        
+        // 🔑 Paste your master Gemini API key here (starting with AIzaSy...)
+        const MASTER_API_KEY = AQ.Ab8RN6JM0gEnwo-QrCGitC8W4LSLC0eFKLmqc7ixqOYfuc3vYQ
+
+        let flashcardsData = [];
+        let currentCardIndex = 0;
+        let isShowingAnswer = false;
+        let uploadedImagePayload = null;
 
         window.onload = function() {
             const user = localStorage.getItem('scholaris_user');
@@ -105,34 +153,116 @@
         }
 
         function loadSampleNotes() {
-            document.getElementById('notesInput').value = `Topic: Cell Biology & Photosynthesis\nPhotosynthesis converts light energy into chemical energy in chloroplasts.`;
+            document.getElementById('notesInput').value = `Topic: Principles of Cell Biology & Mitosis\n1. Interphase: Cell prepares for division through G1, S (DNA replication), and G2 phases.\n2. Prophase: Chromatin condenses into visible chromosomes, and spindle fiber assembly begins.\n3. Metaphase: Chromosomes line up along the metaphase plate across the equator of the cell.\n4. Anaphase: Sister chromatids separate and are pulled to opposite spindle poles.\n5. Telophase & Cytokinesis: Nuclear envelopes reform, chromosomes decondense, and cytoplasm cleaves to yield two daughter cells.`;
+            uploadedImagePayload = null;
+            document.getElementById('fileNameDisplay').textContent = '';
         }
 
         function clearAll() {
             document.getElementById('notesInput').value = '';
+            document.getElementById('fileUpload').value = '';
+            uploadedImagePayload = null;
+            document.getElementById('fileNameDisplay').textContent = '';
             document.getElementById('outputContainer').classList.add('hidden');
         }
 
+        document.getElementById('fileUpload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('fileNameDisplay').textContent = `Loaded: ${file.name}`;
+
+            if (file.type === 'text/plain') {
+                const reader = new FileReader();
+                reader.onload = (event) => { document.getElementById('notesInput').value = event.target.result; };
+                reader.readAsText(file);
+            } else if (file.type === 'application/pdf') {
+                document.getElementById('notesInput').value = 'Extracting text from PDF...';
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    let fullText = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                    }
+                    document.getElementById('notesInput').value = fullText;
+                } catch (err) {
+                    alert('Error parsing PDF: ' + err.message);
+                }
+            } else if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const base64Data = event.target.result.split(',')[1];
+                    uploadedImagePayload = { inlineData: { data: base64Data, mimeType: file.type } };
+                    document.getElementById('notesInput').value = `[Attached Image: ${file.name} - Ready for AI Processing]`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function switchTab(tabName) {
+            ['summary', 'flashcards', 'quiz'].forEach(t => {
+                document.getElementById(`content${t.charAt(0).toUpperCase() + t.slice(1)}`).classList.add('hidden');
+                document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`).className = "pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap";
+            });
+            document.getElementById(`content${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.remove('hidden');
+            document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).className = "pb-3 font-semibold text-sm border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap";
+        }
+
         async function generateStudyMaterial() {
+            if (!MASTER_API_KEY || MASTER_API_KEY.includes("PASTE_YOUR_")) {
+                alert('Developer notice: Please insert a valid master Gemini API key starting with AIzaSy into the code.');
+                return;
+            }
+
             const text = document.getElementById('notesInput').value.trim();
-            if (!text) {
-                alert('Please provide lecture notes first.');
+            if (!text && !uploadedImagePayload) {
+                alert('Please enter lecture notes, load sample notes, or upload a file first.');
                 return;
             }
 
             const generateBtn = document.getElementById('generateBtn');
             generateBtn.disabled = true;
-            generateBtn.textContent = 'Analyzing with Gemini 2.0 Flash...';
+            generateBtn.textContent = 'Generating Study Tools with Gemini 2.0...';
             document.getElementById('outputContainer').classList.remove('hidden');
-            document.getElementById('contentSummary').innerHTML = '<p class="text-slate-500 italic">Generating study guide...</p>';
+            document.getElementById('contentSummary').innerHTML = '<p class="text-slate-500 italic">Processing materials and formatting outputs...</p>';
+
+            const structuredPrompt = `You are Scholaris AI. Analyze the study material and return a Markdown summary followed by a JSON block for study tools.
+            Strict Output Format:
+            Provide a clean Markdown summary, then output a JSON block formatted exactly like this:
+            \`\`\`json
+            {
+              "flashcards": [
+                {"q": "Question text here", "a": "Answer text here"}
+              ],
+              "quiz": [
+                {
+                  "question": "Question text here?",
+                  "options": ["A) Choice 1", "B) Choice 2", "C) Choice 3", "D) Choice 4"],
+                  "answer": "A) Choice 1"
+                }
+              ]
+            }
+            \`\`\`
+            Material:
+            ${text}`;
+
+            let parts = [{ text: structuredPrompt }];
+            if (uploadedImagePayload) parts.push(uploadedImagePayload);
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`, {
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MASTER_API_KEY}`
+    },
+    body: JSON.stringify({ contents: [{ parts: parts }] })
+});
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Create a clean study guide from these notes:\n${text}` }] }]
-                    })
+                    body: JSON.stringify({ contents: [{ parts: parts }] })
                 });
 
                 const data = await response.json();
@@ -140,6 +270,17 @@
 
                 const outputText = data.candidates[0].content.parts[0].text;
                 document.getElementById('contentSummary').innerHTML = marked.parse(outputText);
+
+                const jsonMatch = outputText.match(/```json([\s\S]*?)```/);
+                if (jsonMatch) {
+                    const parsedData = JSON.parse(jsonMatch[1]);
+                    flashcardsData = parsedData.flashcards || [];
+                    currentCardIndex = 0;
+                    renderFlashcard();
+                    renderQuiz(parsedData.quiz || []);
+                }
+
+                switchTab('summary');
             } catch (err) {
                 document.getElementById('contentSummary').innerHTML = `<p class="text-red-600 font-semibold">Error: ${err.message}</p>`;
             } finally {
@@ -147,6 +288,61 @@
                 generateBtn.textContent = '✨ Generate Study Guide & Tools';
             }
         }
+
+        function renderFlashcard() {
+            if (flashcardsData.length === 0) return;
+            isShowingAnswer = false;
+            document.getElementById('flashcardText').innerText = flashcardsData[currentCardIndex].q;
+            document.getElementById('cardCounter').innerText = `Card ${currentCardIndex + 1} of ${flashcardsData.length} (Click card to flip)`;
+        }
+
+        document.getElementById('flashcardBox').addEventListener('click', () => {
+            if (flashcardsData.length === 0) return;
+            isShowingAnswer = !isShowingAnswer;
+            document.getElementById('flashcardText').innerText = isShowingAnswer ? flashcardsData[currentCardIndex].a : flashcardsData[currentCardIndex].q;
+        });
+
+        function nextCard() {
+            if (flashcardsData.length === 0) return;
+            currentCardIndex = (currentCardIndex + 1) % flashcardsData.length;
+            renderFlashcard();
+        }
+
+        function prevCard() {
+            if (flashcardsData.length === 0) return;
+            currentCardIndex = (currentCardIndex - 1 + flashcardsData.length) % flashcardsData.length;
+            renderFlashcard();
+        }
+
+        function renderQuiz(quizArray) {
+            const container = document.getElementById('quizContainer');
+            if (quizArray.length === 0) {
+                container.innerHTML = '<p class="text-slate-500">No practice questions generated.</p>';
+                return;
+            }
+            container.innerHTML = quizArray.map((q, idx) => `
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <p class="font-semibold text-slate-800 text-sm">Q${idx + 1}: ${q.question}</p>
+                    <div class="grid grid-cols-1 gap-2">
+                        ${q.options.map(opt => `
+                            <button onclick="checkAnswer(this, '${opt.charAt(0)}', '${q.answer.charAt(0)}')" class="text-left text-xs p-2.5 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 transition">${opt}</button>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function checkAnswer(btn, selected, correct) {
+            const parent = btn.parentElement;
+            Array.from(parent.children).forEach(b => {
+                b.disabled = true;
+                if (b.innerText.startsWith(correct)) {
+                    b.className = "text-left text-xs p-2.5 rounded-lg border border-green-300 bg-green-100 text-green-800 font-semibold";
+                } else if (b === btn && selected !== correct) {
+                    b.className = "text-left text-xs p-2.5 rounded-lg border border-red-300 bg-red-100 text-red-800 font-semibold";
+                }
+            });
+        }
     </script>
 </body>
-</html>
+    </html>
