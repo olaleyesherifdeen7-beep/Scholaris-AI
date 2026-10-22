@@ -1,1 +1,330 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholaris AI - Academic Study Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Navigation Bar -->
+  <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-indigo-600 rounded-lg">
+          <i class="fa-solid fa-graduation-cap text-2xl text-amber-300"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">Scholaris AI</h1>
+          <p class="text-xs text-indigo-200">University Study Assistant</p>
+        </div>
+      </div>
+      <button id="settingsBtn" class="p-2 hover:bg-indigo-600 rounded-lg transition text-indigo-100 hover:text-white" title="Settings">
+        <i class="fa-solid fa-gear text-lg"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 m-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-sliders text-indigo-600 mr-2"></i>API & Database Setup</h3>
+        <button id="closeSettingsBtn" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Gemini API Key</label>
+          <input type="password" id="geminiApiKeyInput" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="AIzaSy...">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Supabase URL</label>
+          <input type="text" id="supabaseUrlInput" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="https://xyz.supabase.co">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Supabase Anon Key</label>
+          <input type="password" id="supabaseAnonKeyInput" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="eyJhbGci...">
+        </div>
+        <button id="saveSettingsBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition shadow-sm">
+          Save Credentials
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Workspace -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- Input Column -->
+    <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[750px]">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="font-bold text-slate-700 flex items-center gap-2">
+          <i class="fa-solid fa-file-pen text-indigo-600"></i> Lecture Material
+        </h2>
+        <div class="space-x-2">
+          <button id="sampleBtn" class="text-xs bg-indigo-50 text-indigo-600 font-medium px-2.5 py-1.5 rounded-md hover:bg-indigo-100 transition">
+            Load Sample Notes
+          </button>
+          <button id="clearBtn" class="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-1.5 rounded-md hover:bg-slate-200 transition">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <textarea id="lectureNotesInput" class="w-full flex-1 p-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none leading-relaxed" placeholder="Paste your lecture notes, textbook chapters, or reading assignments here..."></textarea>
+
+      <div class="mt-4 flex gap-3">
+        <button id="generateBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Study Guide
+        </button>
+      </div>
+    </section>
+
+    <!-- Output Column -->
+    <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[750px]">
+      
+      <!-- Output Tabs -->
+      <div class="flex border-b border-slate-200 mb-4 overflow-x-auto" id="outputTabs">
+        <button data-tab="summary" class="tab-btn py-2 px-4 text-sm font-medium text-slate-500 hover:text-indigo-600 whitespace-nowrap tab-active">
+          <i class="fa-solid fa-list-check mr-1"></i> Study Guide
+        </button>
+        <button data-tab="quiz" class="tab-btn py-2 px-4 text-sm font-medium text-slate-500 hover:text-indigo-600 whitespace-nowrap">
+          <i class="fa-solid fa-circle-question mr-1"></i> Interactive Quiz
+        </button>
+        <button data-tab="history" class="tab-btn py-2 px-4 text-sm font-medium text-slate-500 hover:text-indigo-600 whitespace-nowrap">
+          <i class="fa-solid fa-clock-history mr-1"></i> Saved Notes
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="flex-1 overflow-y-auto pr-1">
+        
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden h-full flex flex-col items-center justify-center text-center p-6">
+          <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+          <p class="font-semibold text-slate-700">Analyzing Lecture Notes...</p>
+          <p class="text-xs text-slate-400 mt-1">Generating summary, glossary, and practice quiz</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+          <i class="fa-solid fa-book-open text-5xl mb-3 text-slate-300"></i>
+          <p class="font-medium text-slate-600">No Content Generated Yet</p>
+          <p class="text-xs max-w-xs mt-1">Paste your lecture notes on the left and click 'Generate Study Guide' to begin.</p>
+        </div>
+
+        <!-- Summary Tab -->
+        <div id="summaryContent" class="tab-content hidden prose prose-indigo max-w-none text-slate-700 text-sm leading-relaxed"></div>
+
+        <!-- Interactive Quiz Tab -->
+        <div id="quizContent" class="tab-content hidden space-y-4"></div>
+
+        <!-- Saved History Tab -->
+        <div id="historyContent" class="tab-content hidden space-y-3"></div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- App Script -->
+  <script>
+    // State Management
+    let config = {
+      geminiKey: localStorage.getItem('scholaris_gemini_key') || '',
+      supabaseUrl: localStorage.getItem('scholaris_supabase_url') || '',
+      supabaseKey: localStorage.getItem('scholaris_supabase_key') || ''
+    };
+
+    let currentQuizData = [];
+    let userAnswers = {};
+
+    // Sample Lecture Notes
+    const sampleNotes = `PLANT SCIENCE: PHOTOSYNTHESIS OVERVIEW
+Photosynthesis is the metabolic process by which green plants, algae, and cyanobacteria convert light energy into chemical energy stored in glucose molecules.
+
+1. Light-Dependent Reactions:
+- Occur in the thylakoid membranes of chloroplasts.
+- Require light energy absorbed by chlorophyll pigments.
+- Water (H2O) is split via photolysis into oxygen (released as a byproduct), protons (H+), and electrons.
+- Produces ATP and NADPH to power the next stage.
+
+2. Light-Independent Reactions (Calvin Cycle):
+- Occurs in the stroma of the chloroplast.
+- Does not directly require light, but uses ATP and NADPH from light reactions.
+- Fixes carbon dioxide (CO2) into 3-carbon sugars using the enzyme RuBisCO (Ribulose-1,5-bisphosphate carboxylase-oxygenase).
+
+Key Significance:
+Photosynthesis provides the primary energy source for nearly all living ecosystems and maintains atmospheric oxygen levels necessary for cellular respiration.`;
+
+    // DOM Elements
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    
+    const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
+    const supabaseUrlInput = document.getElementById('supabaseUrlInput');
+    const supabaseAnonKeyInput = document.getElementById('supabaseAnonKeyInput');
+
+    const lectureNotesInput = document.getElementById('lectureNotesInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const sampleBtn = document.getElementById('sampleBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    const loadingState = document.getElementById('loadingState');
+    const emptyState = document.getElementById('emptyState');
+    const summaryContent = document.getElementById('summaryContent');
+    const quizContent = document.getElementById('quizContent');
+    const historyContent = document.getElementById('historyContent');
+
+    // Init App Settings
+    geminiApiKeyInput.value = config.geminiKey;
+    supabaseUrlInput.value = config.supabaseUrl;
+    supabaseAnonKeyInput.value = config.supabaseKey;
+
+    // Toggle Modal
+    settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+    closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+    // Save Settings
+    saveSettingsBtn.addEventListener('click', () => {
+      config.geminiKey = geminiApiKeyInput.value.trim();
+      config.supabaseUrl = supabaseUrlInput.value.trim();
+      config.supabaseKey = supabaseAnonKeyInput.value.trim();
+
+      localStorage.setItem('scholaris_gemini_key', config.geminiKey);
+      localStorage.setItem('scholaris_supabase_url', config.supabaseUrl);
+      localStorage.setItem('scholaris_supabase_key', config.supabaseKey);
+
+      settingsModal.classList.add('hidden');
+      alert('Credentials saved successfully!');
+    });
+
+    // Sample & Clear Actions
+    sampleBtn.addEventListener('click', () => lectureNotesInput.value = sampleNotes);
+    clearBtn.addEventListener('click', () => lectureNotesInput.value = '');
+
+    // Navigation Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+
+        btn.classList.add('tab-active');
+        const targetTab = btn.getAttribute('data-tab');
+
+        if (targetTab === 'summary') summaryContent.classList.remove('hidden');
+        if (targetTab === 'quiz') quizContent.classList.remove('hidden');
+        if (targetTab === 'history') {
+          historyContent.classList.remove('hidden');
+          loadHistory();
+        }
+      });
+    });
+
+    // Generate AI Content
+    generateBtn.addEventListener('click', async () => {
+      const text = lectureNotesInput.value.trim();
+      if (!text) return alert('Please enter or paste some lecture notes first.');
+      if (!config.geminiKey) {
+        settingsModal.classList.remove('hidden');
+        return alert('Please enter your Gemini API Key in Settings first.');
+      }
+
+      // UI Loading State
+      emptyState.classList.add('hidden');
+      summaryContent.classList.add('hidden');
+      quizContent.classList.add('hidden');
+      loadingState.classList.remove('hidden');
+
+      try {
+        const responseText = await callGeminiAPI(text);
+        
+        loadingState.classList.add('hidden');
+        summaryContent.classList.remove('hidden');
+        summaryContent.innerHTML = marked.parse(responseText);
+
+        saveToSupabase(text, responseText);
+      } catch (err) {
+        loadingState.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        alert('API Request Failed: ' + err.message);
+      }
+    });
+
+    // Gemini API Request
+    async function callGeminiAPI(notes) {
+      const systemPrompt = `You are Scholaris AI, an expert university academic study tool. Analyze the provided lecture notes and output a well-structured study guide divided into:
+1. Executive Summary (2-3 concise sentences)
+2. Key Concepts & Simplified Notes (clear bullet points with intuitive analogies)
+3. Technical Glossary (3-7 key terms with 1-sentence definitions)
+4. Practice Exam Quiz (3-5 multiple-choice questions with 4 options A-D and an Answer Key with explanations at the end).`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${config.geminiKey}`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemPrompt}\n\nLecture Notes:\n${notes}` }] }]
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+      const data = await res.json();
+      return data.candidates[0].content.parts[0].text;
+    }
+
+    // Save Study Guide to Supabase
+    async function saveToSupabase(notes, result) {
+      if (!config.supabaseUrl || !config.supabaseKey) return;
+      try {
+        const client = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+        await client.from('study_guides').insert([
+          { notes_input: notes.substring(0, 300), ai_response: result, created_at: new Date() }
+        ]);
+      } catch (e) {
+        console.warn('Supabase save failed:', e);
+      }
+    }
+
+    // Load History from Supabase
+    async function loadHistory() {
+      if (!config.supabaseUrl || !config.supabaseKey) {
+        historyContent.innerHTML = '<p class="text-xs text-slate-400 p-3">Connect Supabase in Settings to view saved notes history.</p>';
+        return;
+      }
+      try {
+        const client = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+        const { data, error } = await client.from('study_guides').select('*').order('created_at', { ascending: false }).limit(5);
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          historyContent.innerHTML = '<p class="text-xs text-slate-400 p-3">No saved guides yet.</p>';
+          return;
+        }
+
+        historyContent.innerHTML = data.map(item => `
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+            <p class="font-semibold text-slate-700 truncate">${item.notes_input}</p>
+            <p class="text-slate-400 mt-1">${new Date(item.created_at).toLocaleDateString()}</p>
+          </div>
+        `).join('');
+      } catch (e) {
+        historyContent.innerHTML = '<p class="text-xs text-red-400 p-3">Failed to load history.</p>';
+      }
+    }
+  </script>
+</body>
+</html>
